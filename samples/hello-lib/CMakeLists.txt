@@ -12,15 +12,15 @@ set (SRC
 )
 
 # Headers
-set (H
+set (HDR
 	HelloWorld.h
 	HelloIOS.h
 )
 
 # Library
-add_library (hello-lib STATIC ${SRC} ${H})
+add_library (hello-lib STATIC ${SRC} ${HDR})
 
 # Installation
-set (CMAKE_INSTALL_PREFIX "${hello-lib_SOURCE_DIR}/../hello-app/HelloApp")
+set (CMAKE_INSTALL_PREFIX "${hello-lib_SOURCE_DIR}/../hello-app")
 install (TARGETS hello-lib DESTINATION .)
-install (FILES ${H} DESTINATION .)
+install (FILES ${HDR} DESTINATION .)
