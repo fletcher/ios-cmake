@@ -20,10 +20,17 @@
 
 # Standard settings
 set (CMAKE_SYSTEM_NAME Darwin)
-set (CMAKE_SYSTEM_VERSION 1 )
+set (CMAKE_SYSTEM_VERSION 1)
 set (UNIX True)
 set (APPLE True)
 set (IOS True)
+
+# Determine the cmake host system version so we know where to find the iOS SDKs
+find_program (CMAKE_UNAME uname /bin /usr/bin /usr/local/bin)
+if (CMAKE_UNAME)
+	exec_program(uname ARGS -r OUTPUT_VARIABLE CMAKE_HOST_SYSTEM_VERSION)
+	string (REGEX REPLACE "^([0-9]+)\\.([0-9]+).*$" "\\1" DARWIN_MAJOR_VERSION "${CMAKE_HOST_SYSTEM_VERSION}")
+endif (CMAKE_UNAME)
 
 # Force the compilers to gcc for iOS
 include (CMakeForceCompiler)
@@ -48,8 +55,8 @@ set (CMAKE_CXX_OSX_COMPATIBILITY_VERSION_FLAG "${CMAKE_C_OSX_COMPATIBILITY_VERSI
 set (CMAKE_CXX_OSX_CURRENT_VERSION_FLAG "${CMAKE_C_OSX_CURRENT_VERSION_FLAG}")
 
 # Hidden visibilty is required for cxx on iOS 
-set (CMAKE_C_FLAGS "")
-set (CMAKE_CXX_FLAGS "-headerpad_max_install_names -fvisibility=hidden -fvisibility-inlines-hidden")
+set (CMAKE_C_FLAGS_INIT "")
+set (CMAKE_CXX_FLAGS_INIT "-headerpad_max_install_names -fvisibility=hidden -fvisibility-inlines-hidden")
 
 set (CMAKE_C_LINK_FLAGS "-Wl,-search_paths_first ${CMAKE_C_LINK_FLAGS}")
 set (CMAKE_CXX_LINK_FLAGS "-Wl,-search_paths_first ${CMAKE_CXX_LINK_FLAGS}")
@@ -78,15 +85,25 @@ set (IOS_PLATFORM ${IOS_PLATFORM} CACHE STRING "Type of iOS Platform")
 # Check the platform selection and setup for developer root
 if (${IOS_PLATFORM} STREQUAL "OS")
 	set (IOS_PLATFORM_LOCATION "iPhoneOS.platform")
+
+	# This causes the installers to properly locate the output libraries
+	set (CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphoneos")
 elseif (${IOS_PLATFORM} STREQUAL "SIMULATOR")
 	set (IOS_PLATFORM_LOCATION "iPhoneSimulator.platform")
+
+	# This causes the installers to properly locate the output libraries
+	set (CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphonesimulator")
 else (${IOS_PLATFORM} STREQUAL "OS")
 	message (FATAL_ERROR "Unsupported IOS_PLATFORM value selected. Please choose OS or SIMULATOR")
 endif (${IOS_PLATFORM} STREQUAL "OS")
 
-# Setup iOS developer location
+# Setup iOS developer location, which changed for OSX Lion (Darwin 11)
 if (NOT DEFINED CMAKE_IOS_DEVELOPER_ROOT)
-	set (CMAKE_IOS_DEVELOPER_ROOT "/Developer/Platforms/${IOS_PLATFORM_LOCATION}/Developer")
+	if (${DARWIN_MAJOR_VERSION} GREATER "10")
+		set (CMAKE_IOS_DEVELOPER_ROOT "/Applications/Xcode.app/Contents/Developer/Platforms/${IOS_PLATFORM_LOCATION}/Developer")
+	else (${DARWIN_MAJOR_VERSION} GREATER "10")
+		set (CMAKE_IOS_DEVELOPER_ROOT "/Developer/Platforms/${IOS_PLATFORM_LOCATION}/Developer")
+	endif (${DARWIN_MAJOR_VERSION} GREATER "10")
 endif (NOT DEFINED CMAKE_IOS_DEVELOPER_ROOT)
 set (CMAKE_IOS_DEVELOPER_ROOT ${CMAKE_IOS_DEVELOPER_ROOT} CACHE PATH "Location of iOS Platform")
 
@@ -128,4 +145,5 @@ set (CMAKE_SYSTEM_FRAMEWORK_PATH
 set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
 set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
 
