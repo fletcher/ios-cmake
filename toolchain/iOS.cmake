@@ -76,7 +76,7 @@ if (NOT DEFINED CMAKE_INSTALL_NAME_TOOL)
 	find_program(CMAKE_INSTALL_NAME_TOOL install_name_tool)
 endif (NOT DEFINED CMAKE_INSTALL_NAME_TOOL)
 
-# Setup iOS platform
+# Setup iOS platform unless specified manually with IOS_PLATFORM
 if (NOT DEFINED IOS_PLATFORM)
 	set (IOS_PLATFORM "OS")
 endif (NOT DEFINED IOS_PLATFORM)
@@ -97,17 +97,20 @@ else (${IOS_PLATFORM} STREQUAL "OS")
 	message (FATAL_ERROR "Unsupported IOS_PLATFORM value selected. Please choose OS or SIMULATOR")
 endif (${IOS_PLATFORM} STREQUAL "OS")
 
-# Setup iOS developer location, which changed for OSX Lion (Darwin 11)
+# Setup iOS developer location unless specified manually with CMAKE_IOS_DEVELOPER_ROOT
+# Note Xcode 4.3 changed the installation location, choose the most recent one available
+set (XCODE_POST_43_ROOT "/Applications/Xcode.app/Contents/Developer/Platforms/${IOS_PLATFORM_LOCATION}/Developer")
+set (XCODE_PRE_43_ROOT "/Developer/Platforms/${IOS_PLATFORM_LOCATION}/Developer")
 if (NOT DEFINED CMAKE_IOS_DEVELOPER_ROOT)
-	if (${DARWIN_MAJOR_VERSION} GREATER "10")
-		set (CMAKE_IOS_DEVELOPER_ROOT "/Applications/Xcode.app/Contents/Developer/Platforms/${IOS_PLATFORM_LOCATION}/Developer")
-	else (${DARWIN_MAJOR_VERSION} GREATER "10")
-		set (CMAKE_IOS_DEVELOPER_ROOT "/Developer/Platforms/${IOS_PLATFORM_LOCATION}/Developer")
-	endif (${DARWIN_MAJOR_VERSION} GREATER "10")
+	if (EXISTS ${XCODE_POST_43_ROOT})
+		set (CMAKE_IOS_DEVELOPER_ROOT ${XCODE_POST_43_ROOT})
+	elseif(EXISTS ${XCODE_PRE_43_ROOT})
+		set (CMAKE_IOS_DEVELOPER_ROOT ${XCODE_PRE_43_ROOT})
+	endif (EXISTS ${XCODE_POST_43_ROOT})
 endif (NOT DEFINED CMAKE_IOS_DEVELOPER_ROOT)
 set (CMAKE_IOS_DEVELOPER_ROOT ${CMAKE_IOS_DEVELOPER_ROOT} CACHE PATH "Location of iOS Platform")
 
-# Find and use the most recent iOS sdk 
+# Find and use the most recent iOS sdk unless specified manually with CMAKE_IOS_SDK_ROOT
 if (NOT DEFINED CMAKE_IOS_SDK_ROOT)
 	file (GLOB _CMAKE_IOS_SDKS "${CMAKE_IOS_DEVELOPER_ROOT}/SDKs/*")
 	if (_CMAKE_IOS_SDKS) 
@@ -124,9 +127,10 @@ set (CMAKE_IOS_SDK_ROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Location of the select
 # Set the sysroot default to the most recent SDK
 set (CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Sysroot used for iOS support")
 
-# set the architecture for iOS - using ARCHS_STANDARD_32_BIT sets armv6,armv7 and appears to be XCode's standard. 
-# The other value that works is ARCHS_UNIVERSAL_IPHONE_OS but that sets armv7 only
-set (CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_32_BIT)" CACHE string  "Build architecture for iOS")
+# set the architecture for iOS 
+# NOTE: Currently both ARCHS_STANDARD_32_BIT and ARCHS_UNIVERSAL_IPHONE_OS set armv7 only, so set both manually
+set (IOS_ARCH armv6 armv7)
+set (CMAKE_OSX_ARCHITECTURES ${IOS_ARCH} CACHE string  "Build architecture for iOS")
 
 # Set the find root to the iOS developer roots and to user defined paths
 set (CMAKE_FIND_ROOT_PATH ${CMAKE_IOS_DEVELOPER_ROOT} ${CMAKE_IOS_SDK_ROOT} ${CMAKE_PREFIX_PATH} CACHE string  "iOS find search path root")
