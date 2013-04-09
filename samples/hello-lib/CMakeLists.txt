@@ -19,6 +19,7 @@ set (HDR
 
 # Library
 add_library (hello-lib STATIC ${SRC} ${HDR})
+set_xcode_property (hello-lib GCC_GENERATE_DEBUGGING_SYMBOLS YES)
 
 # Installation
 set (CMAKE_INSTALL_PREFIX "${hello-lib_SOURCE_DIR}/../hello-app")
